@@ -325,9 +325,11 @@ function getStorage() {
   };
 }
 function loadHi() {
-  HIQ = Promise.resolve().then(() => getStorage().get(HI_KEY)).then(r => {
-    const v = r && r.found ? +r.value : 0; // valida lo leído: el formato pudo cambiar
-    if (isFinite(v) && v > REC) REC = v;
+  // timeout: si el bridge nunca responde, no bloquea los guardados posteriores
+  const get = Promise.resolve().then(() => getStorage().get(HI_KEY));
+  HIQ = Promise.race([get, new Promise(ok => setTimeout(ok, 3000))]).then(r => {
+    const v = r && r.found ? r.value : 0; // valida lo leído: el formato pudo cambiar
+    if (typeof v == 'number' && v > REC && v < 1e9) REC = v;
     if (G && G.recT && G.recT.active) G.recT.setText('RÉCORD: ' + money(REC));
   }).catch(() => { });
 }
